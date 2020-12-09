@@ -4,10 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -41,16 +39,15 @@ import com.sequenceiq.cloudbreak.auth.crn.RegionAwareInternalCrnGeneratorFactory
 import com.sequenceiq.freeipa.api.v1.freeipa.user.model.WorkloadCredentialsUpdateType;
 import com.sequenceiq.freeipa.api.v1.operation.model.OperationState;
 import com.sequenceiq.freeipa.api.v1.operation.model.OperationType;
-import com.sequenceiq.freeipa.configuration.BatchPartitionSizeProperties;
 import com.sequenceiq.freeipa.client.FreeIpaClient;
 import com.sequenceiq.freeipa.client.FreeIpaClientException;
+import com.sequenceiq.freeipa.configuration.BatchPartitionSizeProperties;
 import com.sequenceiq.freeipa.entity.Operation;
 import com.sequenceiq.freeipa.entity.Stack;
 import com.sequenceiq.freeipa.entity.UserSyncStatus;
 import com.sequenceiq.freeipa.service.freeipa.FreeIpaClientFactory;
 import com.sequenceiq.freeipa.service.freeipa.user.model.FmsGroup;
 import com.sequenceiq.freeipa.service.freeipa.user.model.FmsUser;
-import com.sequenceiq.freeipa.service.freeipa.user.model.UmsUsersState;
 import com.sequenceiq.freeipa.service.freeipa.user.model.UsersStateDifference;
 import com.sequenceiq.freeipa.service.operation.OperationService;
 import com.sequenceiq.freeipa.service.stack.StackService;
@@ -113,24 +110,13 @@ public class UserSyncServiceTest {
 
     @Test
     void testFullSyncRetrievesFullIpaState() throws Exception {
-        UmsUsersState umsUsersState = mock(UmsUsersState.class);
-        underTest.getIpaUserState(freeIpaClient, umsUsersState, true);
+        underTest.getIpaUserState(freeIpaClient);
         verify(freeIpaUsersStateProvider).getUsersState(any());
-    }
-
-    @Test
-    void testFilteredSyncRetrievesFilteredIpaState() throws Exception {
-        UmsUsersState umsUsersState = mock(UmsUsersState.class);
-        ImmutableSet<String> workloadUsers = mock(ImmutableSet.class);
-        when(umsUsersState.getRequestedWorkloadUsernames()).thenReturn(workloadUsers);
-        underTest.getIpaUserState(freeIpaClient, umsUsersState, false);
-        verify(freeIpaUsersStateProvider).getFilteredFreeIpaState(any(), eq(workloadUsers));
     }
 
     @Test
     void testAddUsersToGroupsPartitionsRequests() throws Exception {
         Multimap<String, String> groupMapping = setupGroupMapping(5, underTest.maxSubjectsPerRequest * 2);
-
         Multimap<String, String> warnings = ArrayListMultimap.create();
         doNothing().when(freeIpaClient).callBatch(any(), any(), any(), any());
 
@@ -142,7 +128,6 @@ public class UserSyncServiceTest {
     @Test
     void testRemoveUsersFromGroupsPartitionsRequests() throws Exception {
         Multimap<String, String> groupMapping = setupGroupMapping(5, underTest.maxSubjectsPerRequest * 2);
-
         Multimap<String, String> warnings = ArrayListMultimap.create();
         doNothing().when(freeIpaClient).callBatch(any(), any(), any(), any());
 
@@ -184,11 +169,11 @@ public class UserSyncServiceTest {
         doAnswer(invocation -> {
             assertEquals("crn:cdp:freeipa:us-west-1:altus:user:__internal__actor__", ThreadBasedUserCrnProvider.getUserCrn());
             return null;
-        }).when(spyService).asyncSynchronizeUsers(anyString(), anyString(), anyList(), any(), any());
+        }).when(spyService).asyncSynchronizeUsers(anyString(), anyString(), any(), any());
 
-        spyService.synchronizeUsers("accountId", "actorCrn", Set.of(), Set.of(), Set.of(), WorkloadCredentialsUpdateType.UPDATE_IF_CHANGED);
+        spyService.synchronizeUsers("accountId", "actorCrn", Set.of(), WorkloadCredentialsUpdateType.UPDATE_IF_CHANGED);
 
-        verify(spyService).asyncSynchronizeUsers(anyString(), anyString(), anyList(), any(), any());
+        verify(spyService).asyncSynchronizeUsers(anyString(), anyString(), any(), any());
     }
 
     @Test

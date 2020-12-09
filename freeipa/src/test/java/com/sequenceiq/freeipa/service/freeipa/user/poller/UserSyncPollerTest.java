@@ -82,7 +82,7 @@ class UserSyncPollerTest {
         underTest.syncAllFreeIpaStacks();
 
         verify(userSyncService).synchronizeUsers(UserSyncTestUtils.ACCOUNT_ID, "crn:altus:iam:us-west-1:altus:user:__internal__actor__",
-                Set.of(UserSyncTestUtils.ENVIRONMENT_CRN), Set.of(), Set.of(), WorkloadCredentialsUpdateType.UPDATE_IF_CHANGED);
+                Set.of(UserSyncTestUtils.ENVIRONMENT_CRN), WorkloadCredentialsUpdateType.UPDATE_IF_CHANGED);
     }
 
     @Test
@@ -96,7 +96,7 @@ class UserSyncPollerTest {
         underTest.syncAllFreeIpaStacks();
 
         verify(userSyncService, times(0))
-                .synchronizeUsers(any(), any(), any(), any(), any(), any());
+                .synchronizeUsers(any(), any(), any(), any());
     }
 
     @Test
@@ -111,7 +111,7 @@ class UserSyncPollerTest {
         underTest.syncAllFreeIpaStacks();
 
         verify(userSyncService).synchronizeUsers(UserSyncTestUtils.ACCOUNT_ID, "crn:altus:iam:us-west-1:altus:user:__internal__actor__",
-                Set.of(UserSyncTestUtils.ENVIRONMENT_CRN), Set.of(), Set.of(), WorkloadCredentialsUpdateType.UPDATE_IF_CHANGED);
+                Set.of(UserSyncTestUtils.ENVIRONMENT_CRN), WorkloadCredentialsUpdateType.UPDATE_IF_CHANGED);
     }
 
     @Test
@@ -126,7 +126,7 @@ class UserSyncPollerTest {
         underTest.syncAllFreeIpaStacks();
 
         verify(userSyncService, times(0))
-                .synchronizeUsers(any(), any(), any(), any(), any(), any());
+                .synchronizeUsers(any(), any(), any(), any());
     }
 
     @Test
@@ -140,7 +140,7 @@ class UserSyncPollerTest {
         underTest.syncAllFreeIpaStacks();
 
         verify(userSyncService, times(0))
-                .synchronizeUsers(any(), any(), any(), any(), any(), any());
+                .synchronizeUsers(any(), any(), any(), any());
     }
 
     private Stack setupMockStackService(Stack stack) {
