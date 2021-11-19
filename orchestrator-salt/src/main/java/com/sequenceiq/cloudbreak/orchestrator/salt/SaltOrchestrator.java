@@ -1386,4 +1386,9 @@ public class SaltOrchestrator implements HostOrchestrator {
         LOGGER.debug("Upload state finished");
     }
 
+    @Override
+    public boolean unboundRunningOnCluster(GatewayConfig primaryGateway, Set<Node> nodes) {
+        SaltConnector saltConnector = saltService.createSaltConnector(primaryGateway);
+        return SaltStates.unboundRunningOnCluster(saltConnector, new HostList(nodes.stream().map(node -> node.getHostname()).collect(Collectors.toSet())));
+    }
 }

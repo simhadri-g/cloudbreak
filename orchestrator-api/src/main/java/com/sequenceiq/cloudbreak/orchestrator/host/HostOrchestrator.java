@@ -133,4 +133,6 @@ public interface HostOrchestrator extends HostRecipeExecutor {
     boolean unboundClusterConfigPresentOnAnyNodes(GatewayConfig primaryGateway, Set<String> nodes);
 
     void uploadStates(List<GatewayConfig> allGatewayConfigs, ExitCriteriaModel exitModel) throws CloudbreakOrchestratorException;
+
+    boolean unboundRunningOnCluster(GatewayConfig primaryGateway, Set<Node> nodes);
 }
