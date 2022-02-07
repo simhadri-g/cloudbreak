@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.sequenceiq.cloudbreak.api.endpoint.v4.autoscales.base.ScalingStrategy;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.autoscales.request.UpdateStackV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.autoscales.response.CertificateV4Response;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.common.StackType;
@@ -58,6 +59,7 @@ import com.sequenceiq.cloudbreak.structuredevent.CloudbreakRestRequestThreadLoca
 import com.sequenceiq.cloudbreak.structuredevent.event.CloudbreakEventService;
 import com.sequenceiq.cloudbreak.template.BlueprintUpdaterConnectors;
 import com.sequenceiq.cloudbreak.template.TemplatePreparationObject;
+import com.sequenceiq.cloudbreak.util.StackUtil;
 import com.sequenceiq.cloudbreak.workspace.model.User;
 import com.sequenceiq.cloudbreak.workspace.model.Workspace;
 import com.sequenceiq.flow.api.model.FlowIdentifier;
@@ -136,6 +138,9 @@ public class StackCommonService {
     @Inject
     private TransactionService transactionService;
 
+    @Inject
+    private StackUtil stackUtil;
+
     public StackV4Response createInWorkspace(StackV4Request stackRequest, User user, Workspace workspace, boolean distroxRequest) {
         return stackCreatorService.createStack(user, workspace, stackRequest, distroxRequest);
     }
@@ -165,9 +170,20 @@ public class StackCommonService {
     }
 
     public void putInDefaultWorkspace(String crn, UpdateStackV4Request updateRequest) {
+        LOGGER.info("Received putStack on crn: {}, updateRequest: {}", crn, updateRequest);
         Stack stack = stackService.getByCrn(crn);
         MDCBuilder.buildMdcContext(stack);
         put(stack, updateRequest);
+    }
+
+    public void putStartInstancesInDefaultWorkspace(String crn, UpdateStackV4Request updateRequest, ScalingStrategy scalingStrategy) {
+        LOGGER.info("Received putStack on crn: {}, with scalingStrategy: {}, updateRequest: {}", crn, scalingStrategy, updateRequest);
+        Stack stack = stackService.getByCrn(crn);
+        if (!stackUtil.stopStartScalingEntitlementEnabled(stack)) {
+            throw new BadRequestException("The entitlement for scaling via stop/start is not enabled");
+        }
+        MDCBuilder.buildMdcContext(stack);
+        putStartInstances(stack, updateRequest, scalingStrategy);
     }
 
     public FlowIdentifier putStopInWorkspace(NameOrCrn nameOrCrn, Long workspaceId) {
@@ -213,6 +229,18 @@ public class StackCommonService {
         }
         validateStackIsNotDataLake(stack.get(), instanceIds);
         return stackOperationService.removeInstances(stack.get(), instanceIds, forced);
+    }
+
+    public FlowIdentifier stopMultipleInstancesInWorkspace(NameOrCrn nameOrCrn, Long workspaceId, Set<String> instanceIds, boolean forced) {
+        Optional<Stack> stack = stackService.findStackByNameOrCrnAndWorkspaceId(nameOrCrn, workspaceId);
+        if (stack.isEmpty()) {
+            throw new BadRequestException("The requested Data Hub does not exist.");
+        }
+        if (!stackUtil.stopStartScalingEntitlementEnabled(stack.get())) {
+            throw new BadRequestException("The entitlement for scaling via stop/start is not enabled");
+        }
+        validateStackIsNotDataLake(stack.get(), instanceIds);
+        return stackOperationService.stopInstances(stack.get(), instanceIds, forced);
     }
 
     public FlowIdentifier putStartInWorkspace(NameOrCrn nameOrCrn, Long workspaceId) {
@@ -371,6 +399,23 @@ public class StackCommonService {
             validateHardLimits(scalingAdjustment);
             return stackOperationService.updateNodeCount(stack, updateRequest.getInstanceGroupAdjustment(), updateRequest.getWithClusterEvent());
         }
+    }
+
+    private FlowIdentifier putStartInstances(Stack stack, UpdateStackV4Request updateRequest, ScalingStrategy scalingStrategy) {
+        MDCBuilder.buildMdcContext(stack);
+        if (updateRequest.getStatus() != null) {
+            throw new BadRequestException(String.format("Stack status update is not supported while" +
+                            " attempting to scale-up via instance start. Requested status: '%s' (File a bug)",
+                    updateRequest.getStatus()));
+        }
+        if (scalingStrategy == null) {
+            scalingStrategy = ScalingStrategy.STOPSTART;
+            LOGGER.debug("Scaling strategy is null, and has been set to the default: {}", scalingStrategy);
+        }
+        Integer scalingAdjustment = updateRequest.getInstanceGroupAdjustment().getScalingAdjustment();
+        validateHardLimits(scalingAdjustment);
+        return stackOperationService.updateNodeCountStartInstances(stack, updateRequest.getInstanceGroupAdjustment(),
+                updateRequest.getWithClusterEvent(), scalingStrategy);
     }
 
     private void validateHardLimits(Integer scalingAdjustment) {

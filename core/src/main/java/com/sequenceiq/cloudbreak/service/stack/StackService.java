@@ -823,7 +823,7 @@ public class StackService implements ResourceIdProvider, ResourcePropertyProvide
 
     public List<String> getHostNamesForPrivateIds(List<InstanceMetaData> instanceMetaDataList, Collection<Long> privateIds) {
         return getInstanceMetaDataForPrivateIdsWithoutTerminatedInstances(instanceMetaDataList, privateIds).stream()
-                .map(InstanceMetaData::getInstanceId)
+                .map(InstanceMetaData::getDiscoveryFQDN)
                 .collect(Collectors.toList());
     }
 
