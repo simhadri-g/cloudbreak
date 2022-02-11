@@ -28,6 +28,12 @@ class TestGcpComputeBuilder extends AbstractGcpComputeBuilder {
     }
 
     @Override
+    public List<CloudResource> update(GcpContext context, CloudInstance instance, long privateId,
+        AuthenticatedContext auth, Group group, CloudStack cloudStack) throws Exception {
+        return null;
+    }
+
+    @Override
     public CloudResource delete(GcpContext context, AuthenticatedContext auth, CloudResource resource) throws Exception {
         return null;
     }

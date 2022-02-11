@@ -14,9 +14,6 @@ public class StackNameLengthValidator implements ConstraintValidator<ValidStackN
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
-        if (!StringUtils.isEmpty(value)) {
-            return Range.between(MIN_LENGTH, MAX_LENGTH).contains(value.length());
-        }
-        return false;
+        return value != null && Range.between(MIN_LENGTH, MAX_LENGTH).contains(value.length());
     }
 }
