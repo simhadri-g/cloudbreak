@@ -1,0 +1,5 @@
+name: "instance-sudo-permission-tests"
+tests:
+  - name: "instance_sudo_permission_tests"
+    classes:
+      - name: com.sequenceiq.it.cloudbreak.testcase.e2e.l0promotion.EnvironmentPrivilegedUserTest

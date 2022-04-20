@@ -2,6 +2,7 @@ package com.sequenceiq.it.cloudbreak.util.ssh.action;
 
 import static java.lang.String.format;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Component;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.response.instancegroup.InstanceGroupV4Response;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.response.instancegroup.instancemetadata.InstanceMetaDataV4Response;
 import com.sequenceiq.cloudbreak.common.json.Json;
+import com.sequenceiq.freeipa.api.v1.freeipa.stack.model.common.instance.InstanceGroupResponse;
 import com.sequenceiq.freeipa.api.v1.freeipa.stack.model.common.instance.InstanceMetaDataResponse;
 import com.sequenceiq.it.cloudbreak.FreeIpaClient;
 import com.sequenceiq.it.cloudbreak.dto.AbstractSdxTestDto;
@@ -32,11 +35,14 @@ import com.sequenceiq.it.cloudbreak.log.Log;
 import com.sequenceiq.it.cloudbreak.util.ssh.client.SshJClient;
 
 import net.schmizz.sshj.SSHClient;
+import net.schmizz.sshj.connection.ConnectionException;
+import net.schmizz.sshj.transport.TransportException;
 
 @Component
 public class SshJClientActions extends SshJClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(SshJClientActions.class);
 
+    // TODO: I think here we can create a common method for the 'getSdxInstanceGroupIps' and the 'getDistroXInstanceGroupIps'
     private List<String> getSdxInstanceGroupIps(List<InstanceGroupV4Response> instanceGroups, List<String> hostGroupNames, boolean publicIp) {
         List<String> instanceIPs = new ArrayList<>();
 
@@ -45,7 +51,7 @@ public class SshJClientActions extends SshJClient {
                     .filter(instanceGroup -> instanceGroup.getName().equals(hostGroupName))
                     .findFirst().orElse(null)).getMetadata().stream().findFirst().orElse(null);
             assert instanceMetaDataV4Response != null;
-            LOGGER.info("The selected Instance Group [{}] and the available Private IP [{}] and Public IP [{}]]. {} ip will be used.",
+            LOGGER.info("The selected SDX Instance Group [{}] and the available Private IP [{}] and Public IP [{}]]. {} ip will be used.",
                     instanceMetaDataV4Response.getInstanceGroup(), instanceMetaDataV4Response.getPrivateIp(), instanceMetaDataV4Response.getPublicIp(),
                     publicIp ? "Public" : "Private");
             instanceIPs.add(publicIp ? instanceMetaDataV4Response.getPublicIp() : instanceMetaDataV4Response.getPrivateIp());
@@ -58,11 +64,11 @@ public class SshJClientActions extends SshJClient {
         List<String> instanceIPs = new ArrayList<>();
 
         freeipaClient.getDefaultClient().getFreeIpaV1Endpoint()
-                .describe(environmentCrn).getInstanceGroups().stream()
+                .describe(environmentCrn).getInstanceGroups()
                 .forEach(ig -> {
                     InstanceMetaDataResponse instanceMetaDataResponse = ig.getMetaData().stream().findFirst().orElse(null);
                     assert instanceMetaDataResponse != null;
-                    LOGGER.info("The selected Instance Group [{}] and the available Private IP [{}] and Public IP [{}]]. {} ip will be used.",
+                    LOGGER.info("The selected FreeIPA Instance Group [{}] and the available Private IP [{}] and Public IP [{}]]. {} ip will be used.",
                             instanceMetaDataResponse.getInstanceGroup(), instanceMetaDataResponse.getPrivateIp(), instanceMetaDataResponse.getPublicIp(),
                             publicIp ? "Public" : "Private");
                     instanceIPs.add(publicIp ? instanceMetaDataResponse.getPublicIp() : instanceMetaDataResponse.getPrivateIp());
@@ -71,6 +77,28 @@ public class SshJClientActions extends SshJClient {
         return instanceIPs;
     }
 
+    private List<String> getFreeIpaInstanceGroupIps(List<InstanceGroupResponse> instanceGroups, List<String> hostGroupNames, boolean publicIp) {
+        List<String> instanceIPs = new ArrayList<>();
+
+        hostGroupNames.forEach(hostGroupName -> {
+            List<String> instanceGroupIpList = instanceGroups.stream()
+                    .filter(instanceGroup -> instanceGroup.getName().equals(hostGroupName))
+                    .map(InstanceGroupResponse::getMetaData)
+                    .filter(Objects::nonNull)
+                    .flatMap(Collection::stream)
+                    .map(x -> publicIp && StringUtils.isNotEmpty(x.getPublicIp()) ? x.getPublicIp() : x.getPrivateIp())
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            assert !instanceGroupIpList.isEmpty();
+            LOGGER.info("The selected FreeIPA Instance Group [{}] and the available {} IPs [{}].",
+                    hostGroupName, publicIp ? "Public" : "Private", instanceGroupIpList);
+            instanceIPs.addAll(instanceGroupIpList);
+        });
+
+        return instanceIPs;
+    }
+
+    // TODO: I think here we can create a common method for the 'getSdxInstanceGroupIps' and the 'getDistroXInstanceGroupIps'
     private List<String> getDistroXInstanceGroupIps(List<InstanceGroupV4Response> instanceGroups, List<String> hostGroupNames, boolean publicIp) {
         List<String> instanceIPs = new ArrayList<>();
 
@@ -84,7 +112,7 @@ public class SshJClientActions extends SshJClient {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
             assert !instanceGroupIpList.isEmpty();
-            LOGGER.info("The selected Instance Group [{}] and the available {} IPs [{}].",
+            LOGGER.info("The selected CB Instance Group [{}] and the available {} IPs [{}].",
                     hostGroupName, publicIp ? "Public" : "Private", instanceGroupIpList);
             instanceIPs.addAll(instanceGroupIpList);
         });
@@ -99,7 +127,7 @@ public class SshJClientActions extends SshJClient {
         String appendMessage;
 
         if (StringUtils.isBlank(user) && StringUtils.isBlank(password)) {
-            appendMessage = String.format("with 'cloudbreak' user and defaultPrivateKeyFile from 'application.yml'");
+            appendMessage = "with 'cloudbreak' user and defaultPrivateKeyFile from 'application.yml'";
         } else if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password)) {
             appendMessage = String.format("with user: '%s' and password: '%s' and defaultPrivateKeyFile from 'application.yml'", user, password);
         } else {
@@ -110,9 +138,7 @@ public class SshJClientActions extends SshJClient {
                     user, password));
         }
 
-        /**
-         * Right now only the Private IP is available for an Instance.
-         */
+        // Right now only the Private IP is available for an Instance.
         getSdxInstanceGroupIps(instanceGroups, hostGroupNames, false).forEach(instanceIP -> {
             LOGGER.info("Creating SSH client on '{}' host " + appendMessage, instanceIP);
             try (SSHClient client = createSshClient(instanceIP, user, password, null)) {
@@ -126,8 +152,8 @@ public class SshJClientActions extends SshJClient {
         if (requiredNumberOfFiles == quantity.get()) {
             Log.log(LOGGER, " File '%s' is available at [%s] host group(s). ", filePath, hostGroupNames.toString());
         } else {
-            LOGGER.error("File '{}' is NOT available at [{}] host group(s)!", filePath, hostGroupNames.toString());
-            throw new TestFailException(String.format("File '%s' is NOT available at [%s] host group(s)!", filePath, hostGroupNames.toString()));
+            LOGGER.error("File '{}' is NOT available at [{}] host group(s)!", filePath, hostGroupNames);
+            throw new TestFailException(String.format("File '%s' is NOT available at [%s] host group(s)!", filePath, hostGroupNames));
         }
         return testDto;
     }
@@ -150,11 +176,11 @@ public class SshJClientActions extends SshJClient {
                 LOGGER.error("No device mount point mappings found for node with IP {}!", node.getKey());
                 throw new TestFailException(String.format("No device mount point mappings found for node with IP %s!", node.getKey()));
             }
-            Map<String, String> mounPoints = new Json(deviceMountPointMappingsByIp.get(node.getKey()).getValue()).getMap().entrySet().stream()
+            Map<String, String> mountPoints = new Json(deviceMountPointMappingsByIp.get(node.getKey()).getValue()).getMap().entrySet().stream()
                     .collect(Collectors.toMap(Entry::getKey, x -> String.valueOf(x.getValue())));
 
             for (String device : ephemeralDisks.keySet()) {
-                String mountPoint = mounPoints.get(device);
+                String mountPoint = mountPoints.get(device);
                 if (mountPoint == null) {
                     LOGGER.error("No mount point found for ephemeral device {} on node with IP {}!", device, node.getKey());
                     throw new TestFailException(String.format("No mount point found for device %s on node with IP %s!", device, node.getKey()));
@@ -171,7 +197,7 @@ public class SshJClientActions extends SshJClient {
         Map<String, Pair<Integer, String>> deviceMountPointMappingsByIp = getDeviceMountPointMappingsByIp(instanceGroups, hostGroupNames);
         Map<String, Pair<Integer, String>> deviceDiskTypeMappingsByIp = getDeviceDiskTypeMappingsByIp(instanceGroups, hostGroupNames);
 
-        Map<String, String> mounPoints = deviceDiskTypeMappingsByIp.entrySet().stream().findFirst()
+        Map<String, String> mountPoints = deviceDiskTypeMappingsByIp.entrySet().stream().findFirst()
                 .stream()
                 .map(node -> new Json(deviceMountPointMappingsByIp.get(node.getKey()).getValue()).getMap().entrySet())
                 .flatMap(Set::stream)
@@ -184,7 +210,7 @@ public class SshJClientActions extends SshJClient {
                         .collect(Collectors.toMap(Entry::getKey, x -> String.valueOf(x.getValue()))))
                 .map(Map::keySet)
                 .flatMap(Set::stream)
-                .map(mounPoints::get)
+                .map(mountPoints::get)
                 .collect(Collectors.toSet());
     }
 
@@ -253,7 +279,7 @@ public class SshJClientActions extends SshJClient {
     private void checkNoOutboundInternetTraffic(String instanceIp) {
         Pair<Integer, String> cmdOut = executeSshCommand(instanceIp, "curl --max-time 30 cloudera.com");
         if (cmdOut.getKey() == 0) {
-            throw new TestFailException("Instance [" + instanceIp + "] has internet coonection but shouldn't have!");
+            throw new TestFailException("Instance [" + instanceIp + "] has internet connection but shouldn't have!");
         }
     }
 
@@ -271,7 +297,7 @@ public class SshJClientActions extends SshJClient {
                 "set -x kdestroy && echo Password123! | KRB5_TRACE=/dev/stdout kinit -V fakemockuser0 " +
                         "|| sleep 31 && kdestroy && echo Password123! | KRB5_TRACE=/dev/stdout kinit -V fakemockuser0 && klist | grep fakemockuser0");
         if (cmdOut.getKey() != 0) {
-            String errorMsg = "Kinit wasn't successfull on instance [" +
+            String errorMsg = "Kinit wasn't successful on instance [" +
                     instanceIp + "] during freeipa upgrade! Cmd exit code: " + cmdOut.getKey() + ", Cmd output: " + cmdOut.getValue();
             LOGGER.error(errorMsg);
             throw new TestFailException(errorMsg);
@@ -286,6 +312,29 @@ public class SshJClientActions extends SshJClient {
         } catch (Exception e) {
             LOGGER.error("SSH fail on [{}] while executing command [{}]", instanceIp, command);
             throw new TestFailException(" SSH fail on [" + instanceIp + "] while executing command [" + command + "].", e);
+        }
+    }
+
+    private Pair<Integer, String> executeSshCommand(String instanceIp, String command, SSHClient sshClient) {
+        try {
+            Pair<Integer, String> cmdOut = execute(sshClient, command);
+            Log.log(LOGGER, " Command exit status '%s' and result '%s'. ", cmdOut.getKey(), cmdOut.getValue());
+            return cmdOut;
+        } catch (ConnectionException connectionException) {
+            LOGGER.error("SSH failed on '{}', because of the request to execute the command [{}] has been failed!", instanceIp, command);
+            throw new TestFailException(String.format("SSH failed on '%s', because of the request to execute the command [%s] has been failed!",
+                    instanceIp, command), connectionException);
+        } catch (TransportException transportException) {
+            LOGGER.error("SSH failed on '{}', because of there is an error sending the request for command [{}] execution!", instanceIp, command);
+            throw new TestFailException(String.format("SSH failed on '%s', because of there is an error sending the request for command [%s] execution!",
+                    instanceIp, command), transportException);
+        } catch (IOException ioException) {
+            LOGGER.error("SSH failed on '{}', because of cannot read the command [{}] result!", instanceIp, command);
+            throw new TestFailException(String.format("SSH failed on '%s', because of cannot read the command [%s] result!",
+                    instanceIp, command), ioException);
+        } catch (Exception e) {
+            LOGGER.error("SSH failed on '{}' while executing the command [{}]!", instanceIp, command);
+            throw new TestFailException(String.format("SSH failed on '%s' while executing the command [%s].", instanceIp, command), e);
         }
     }
 
@@ -326,5 +375,44 @@ public class SshJClientActions extends SshJClient {
                 throw new TestFailException(String.format("Mount point %s should exist on node with IP %s!", mountDir, ip));
             }
         });
+    }
+
+    // TODO: For the future test (with SDX and Distrox) we should create a common method!
+    public FreeIpaTestDto checkSudoPermissionOnHost(FreeIpaTestDto testDto, List<InstanceGroupResponse> instanceGroups, List<String> hostGroupNames,
+            String user, String password) {
+        String validateSudoCommand = String.format("echo -e \"%s\" | sudo -S ls", password);
+        String appendMessage;
+        AtomicReference<Pair<Integer, String>> commandResult = new AtomicReference<>();
+
+        if (StringUtils.isBlank(user) && StringUtils.isBlank(password)) {
+            appendMessage = "with 'cloudbreak' user and defaultPrivateKeyFile from 'application.yml'";
+        } else if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password)) {
+            appendMessage = String.format("with user: '%s' and password: '%s' and defaultPrivateKeyFile from 'application.yml'", user, password);
+        } else {
+            LOGGER.error("Creating SSH client is not possible, because of one of the required parameter is missing: \nuser: '{}' \npassword: '{}'",
+                    user, password);
+            throw new TestFailException(String.format("Creating SSH client is not possible, because of one of the required parameter is missing: " +
+                            "%nuser: '%s' %npassword: '%s'",
+                    user, password));
+        }
+
+        // Right now only the Private IP is available for an Instance.
+        getFreeIpaInstanceGroupIps(instanceGroups, hostGroupNames, false).forEach(instanceIP -> {
+            LOGGER.info("Creating SSH client on '{}' host " + appendMessage, instanceIP);
+            try (SSHClient client = createSshClient(instanceIP, user, password, null)) {
+                commandResult.set(executeSshCommand(instanceIP, validateSudoCommand, client));
+            } catch (Exception e) {
+                LOGGER.error("Create SSH client is failing on '{}' host " + appendMessage + ", because of: {}", instanceIP, e.getMessage());
+                throw new TestFailException(String.format(" Create SSH client is failing on '%s' host " + appendMessage, instanceIP), e);
+            }
+        });
+
+        if (commandResult.get().getKey() == 0) {
+            Log.log(LOGGER, " User '%s' has 'sudo' rights at [%s] host group(s). ", user, hostGroupNames.toString());
+        } else {
+            LOGGER.error("User '{}' has NO 'sudo' rights at [{}] host group(s)!", user, hostGroupNames);
+            throw new TestFailException(String.format("User '%s' has NO 'sudo' rights at [%s] host group(s)!", user, hostGroupNames));
+        }
+        return testDto;
     }
 }
