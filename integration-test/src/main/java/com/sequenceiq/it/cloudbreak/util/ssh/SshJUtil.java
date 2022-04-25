@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.response.instancegroup.InstanceGroupV4Response;
 import com.sequenceiq.freeipa.api.v1.freeipa.stack.model.common.instance.InstanceGroupResponse;
 import com.sequenceiq.it.cloudbreak.dto.AbstractSdxTestDto;
-import com.sequenceiq.it.cloudbreak.dto.freeipa.FreeIpaTestDto;
+import com.sequenceiq.it.cloudbreak.dto.CloudbreakTestDto;
 import com.sequenceiq.it.cloudbreak.util.ssh.action.SshJClientActions;
 
 @Component
@@ -26,8 +26,8 @@ public class SshJUtil {
                 password);
     }
 
-    public FreeIpaTestDto checkSudoPermissionOnHost(FreeIpaTestDto testDto, List<InstanceGroupResponse> instanceGroups, List<String> hostGroupNames,
-            String user, String password) {
-        return sshJClientActions.checkSudoPermissionOnHost(testDto, instanceGroups, hostGroupNames, user, password);
+    public <T extends CloudbreakTestDto> T checkSudoPermissionOnHost(T testDto, List<InstanceGroupResponse> instanceGroups, List<String> hostGroupNames,
+            String user, String password, String sudoCommand) {
+        return sshJClientActions.checkSudoPermissionOnHost(testDto, instanceGroups, hostGroupNames, user, password, sudoCommand);
     }
 }

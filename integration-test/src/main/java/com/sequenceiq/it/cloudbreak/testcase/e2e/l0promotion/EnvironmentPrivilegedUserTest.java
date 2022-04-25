@@ -1,6 +1,7 @@
 package com.sequenceiq.it.cloudbreak.testcase.e2e.l0promotion;
 
 import static com.sequenceiq.it.cloudbreak.cloud.HostGroupType.MASTER;
+import static com.sequenceiq.it.cloudbreak.context.RunningParameter.expectedMessage;
 
 import java.util.List;
 
@@ -27,6 +28,7 @@ import com.sequenceiq.it.cloudbreak.dto.freeipa.FreeIpaTestDto;
 import com.sequenceiq.it.cloudbreak.dto.freeipa.FreeIpaUserSyncTestDto;
 import com.sequenceiq.it.cloudbreak.dto.telemetry.TelemetryTestDto;
 import com.sequenceiq.it.cloudbreak.dto.ums.UmsTestDto;
+import com.sequenceiq.it.cloudbreak.exception.TestFailException;
 import com.sequenceiq.it.cloudbreak.testcase.e2e.AbstractE2ETest;
 import com.sequenceiq.it.cloudbreak.util.clouderamanager.ClouderaManagerUtil;
 import com.sequenceiq.it.cloudbreak.util.ssh.SshJUtil;
@@ -118,6 +120,7 @@ public class EnvironmentPrivilegedUserTest extends AbstractE2ETest {
 
         String newWorkloadPassword = "Admin@123";
         String workloadUsernameEnvCreator = testContext.getRealUmsUserByKey(L0UserKeys.USER_ENV_CREATOR).getWorkloadUserName();
+        List<String> sshHostGroups = List.of(MASTER.getName());
 
         useRealUmsUser(testContext, L0UserKeys.USER_ENV_CREATOR);
 
@@ -130,7 +133,12 @@ public class EnvironmentPrivilegedUserTest extends AbstractE2ETest {
                 .given(FreeIpaTestDto.class)
                 .when(freeIpaTestClient.describe())
                 .then((tc, testDto, client) -> sshJUtil.checkSudoPermissionOnHost(testDto, getInstanceGroups(testDto, client), List.of(MASTER.getName()),
-                        workloadUsernameEnvCreator, newWorkloadPassword))
+                        workloadUsernameEnvCreator, newWorkloadPassword, "ls -la"))
+                .thenException((tc, testDto, client) -> sshJUtil.checkSudoPermissionOnHost(testDto, getInstanceGroups(testDto, client), sshHostGroups,
+                                workloadUsernameEnvCreator, newWorkloadPassword, "su"), TestFailException.class,
+                        expectedMessage("User '" + workloadUsernameEnvCreator
+                                + "' is not allowed to execute '/bin/su' as root at "
+                                + hostGroupsPattern(sshHostGroups)))
                 .validate();
     }
 
@@ -138,5 +146,9 @@ public class EnvironmentPrivilegedUserTest extends AbstractE2ETest {
         return client.getDefaultClient()
                 .getFreeIpaV1Endpoint()
                 .describe(testDto.getRequest().getEnvironmentCrn()).getInstanceGroups();
+    }
+
+    public static String hostGroupsPattern(List<String> hostGroups) {
+        return String.format("[\\[]%s.*[]]\\ host group[(]s[)]!", hostGroups);
     }
 }
