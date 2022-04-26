@@ -3,10 +3,14 @@ package com.sequenceiq.it.cloudbreak.testcase.e2e.l0promotion;
 import static com.sequenceiq.it.cloudbreak.cloud.HostGroupType.MASTER;
 import static com.sequenceiq.it.cloudbreak.context.RunningParameter.expectedMessage;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.Assertions;
 import org.testng.annotations.Test;
 
 import com.sequenceiq.cloudbreak.auth.crn.RegionAwareInternalCrnGeneratorFactory;
@@ -132,7 +136,14 @@ public class EnvironmentPrivilegedUserTest extends AbstractE2ETest {
                 .await(OperationState.COMPLETED)
                 .given(FreeIpaTestDto.class)
                 .when(freeIpaTestClient.describe())
-                .then((tc, testDto, client) -> sshJUtil.checkSudoPermissionOnHost(testDto, getInstanceGroups(testDto, client), List.of(MASTER.getName()),
+                .then((tc, testDto, client) -> {
+                    Map<String, Pair<Integer, String>> results = sshJUtil.checkCloudbreakUserOnFreeIpaHost(getInstanceGroups(testDto, client), sshHostGroups,
+                            "sudo systemctl restart sssd.service && sudo systemctl status sssd.service");
+                    results.values().forEach(result -> Assertions.assertEquals(0, result.getLeft()));
+                    tc.waitingFor(Duration.ofMinutes(2), "Waiting for SSSD to be synchronized has been interrupted");
+                    return testDto;
+                })
+                .then((tc, testDto, client) -> sshJUtil.checkSudoPermissionOnHost(testDto, getInstanceGroups(testDto, client), sshHostGroups,
                         workloadUsernameEnvCreator, newWorkloadPassword, "ls -la"))
                 .thenException((tc, testDto, client) -> sshJUtil.checkSudoPermissionOnHost(testDto, getInstanceGroups(testDto, client), sshHostGroups,
                                 workloadUsernameEnvCreator, newWorkloadPassword, "su"), TestFailException.class,
@@ -140,6 +151,8 @@ public class EnvironmentPrivilegedUserTest extends AbstractE2ETest {
                                 + "' is not allowed to execute '/bin/su' as root at "
                                 + hostGroupsPattern(sshHostGroups)))
                 .validate();
+
+        useRealUmsUser(testContext, L0UserKeys.ENV_CREATOR_A);
     }
 
     private List<InstanceGroupResponse> getInstanceGroups(FreeIpaTestDto testDto, FreeIpaClient client) {

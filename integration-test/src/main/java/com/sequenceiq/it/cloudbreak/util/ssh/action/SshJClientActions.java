@@ -215,6 +215,12 @@ public class SshJClientActions extends SshJClient {
                 .collect(Collectors.toMap(ip -> ip, ip -> executeSshCommand(ip, diskTypeListCmd)));
     }
 
+    public Map<String, Pair<Integer, String>> executeSshCommandOnFreeIpa(List<InstanceGroupResponse> instanceGroups, List<String> hostGroupNames,
+            String sshCommand, boolean publicIp) {
+        return getFreeIpaInstanceGroupIps(instanceGroups, hostGroupNames, publicIp).stream()
+                .collect(Collectors.toMap(ip -> ip, ip -> executeSshCommand(ip, sshCommand)));
+    }
+
     public Map<String, Pair<Integer, String>> executeSshCommand(List<InstanceGroupV4Response> instanceGroups, List<String> hostGroupNames, String sshCommand,
             boolean publicIp) {
         return getInstanceGroupIps(instanceGroups, hostGroupNames, publicIp).stream()

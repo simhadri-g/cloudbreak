@@ -1,9 +1,11 @@
 package com.sequenceiq.it.cloudbreak.util.ssh;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Component;
 
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.response.instancegroup.InstanceGroupV4Response;
@@ -29,5 +31,10 @@ public class SshJUtil {
     public <T extends CloudbreakTestDto> T checkSudoPermissionOnHost(T testDto, List<InstanceGroupResponse> instanceGroups, List<String> hostGroupNames,
             String user, String password, String sudoCommand) {
         return sshJClientActions.checkSudoPermissionOnHost(testDto, instanceGroups, hostGroupNames, user, password, sudoCommand);
+    }
+
+    public Map<String, Pair<Integer, String>> checkCloudbreakUserOnFreeIpaHost(List<InstanceGroupResponse> instanceGroups, List<String> hostGroupNames,
+            String sudoCommand) {
+        return sshJClientActions.executeSshCommandOnFreeIpa(instanceGroups, hostGroupNames, sudoCommand, false);
     }
 }
