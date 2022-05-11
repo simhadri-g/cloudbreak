@@ -68,9 +68,6 @@ public class AwsProperties {
     }
 
     public Boolean getMultiaz() {
-        if (multiaz == null) {
-            return Boolean.FALSE;
-        }
         return multiaz;
     }
 
@@ -79,9 +76,6 @@ public class AwsProperties {
     }
 
     public Boolean getGovCloud() {
-        if (govCloud == null) {
-            return Boolean.FALSE;
-        }
         return govCloud;
     }
 

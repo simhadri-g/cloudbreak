@@ -315,4 +315,9 @@ public abstract class AbstractCloudProvider implements CloudProvider {
     public void verifyVolumeEncryptionKey(List<String> volumeEncryptionKeyIds, String environmentName) {
         LOGGER.warn("Disk encryption feature is not available currently");
     }
+
+    @Override
+    public boolean getGovCloud() {
+        return false;
+    }
 }

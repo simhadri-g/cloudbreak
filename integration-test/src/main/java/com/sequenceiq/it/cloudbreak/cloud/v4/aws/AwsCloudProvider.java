@@ -501,6 +501,11 @@ public class AwsCloudProvider extends AbstractCloudProvider {
     }
 
     @Override
+    public boolean getGovCloud() {
+        return awsProperties.getGovCloud();
+    }
+
+    @Override
     public String getFreeIpaUpgradeImageId() {
         return awsProperties.getFreeipa().getUpgrade().getImageId();
     }
