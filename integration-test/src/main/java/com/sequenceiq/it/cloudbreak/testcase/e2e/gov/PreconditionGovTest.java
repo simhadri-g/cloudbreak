@@ -1,11 +1,18 @@
 package com.sequenceiq.it.cloudbreak.testcase.e2e.gov;
 
+import static java.lang.String.format;
+
 import javax.inject.Inject;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.sequenceiq.common.api.type.Tunnel;
+import com.sequenceiq.environment.api.v1.environment.model.request.AttachedFreeIpaRequest;
+import com.sequenceiq.environment.api.v1.environment.model.request.aws.AwsFreeIpaParameters;
+import com.sequenceiq.environment.api.v1.environment.model.request.aws.AwsFreeIpaSpotParameters;
 import com.sequenceiq.it.cloudbreak.client.DistroXTestClient;
 import com.sequenceiq.it.cloudbreak.client.FreeIpaTestClient;
 import com.sequenceiq.it.cloudbreak.client.SdxTestClient;
@@ -27,12 +34,14 @@ public class PreconditionGovTest extends AbstractE2ETest {
     @Inject
     private DistroXTestClient distroXTestClient;
 
+    @Value("${integrationtest.cloudbreak.server}")
+    private String defaultServer;
+
     @Override
     protected void setupTest(TestContext testContext) {
         testContext.getCloudProvider().getCloudFunctionality().cloudStorageInitialize();
-        useRealUmsUser(testContext, GovUserKeys.USER_ACCOUNT_ADMIN);
+        initUsers(testContext);
         initializeDefaultBlueprints(testContext);
-        useRealUmsUser(testContext, GovUserKeys.ENV_CREATOR_A);
         createDefaultCredential(testContext);
     }
 
@@ -64,7 +73,7 @@ public class PreconditionGovTest extends AbstractE2ETest {
                 .given(EnvironmentTestDto.class)
                     .withNetwork()
                     .withTelemetry("telemetry")
-                    .withTunnel(Tunnel.CCMV2_JUMPGATE)
+                    .withTunnel(getTunnel())
                     .withCreateFreeIpa(Boolean.TRUE)
                     .withFreeIpaImage(commonCloudProperties().getImageValidation().getFreeIpaImageCatalog(),
                         commonCloudProperties().getImageValidation().getFreeIpaImageUuid())
@@ -80,4 +89,49 @@ public class PreconditionGovTest extends AbstractE2ETest {
         waitForUserSync(testContext);
         waitForDatalakeCreation(testContext);
     }
+
+    protected Tunnel getTunnel() {
+        checkNonEmpty("integrationtest.cloudbreak.server", defaultServer);
+        if (StringUtils.containsIgnoreCase(defaultServer, "usg-1.cdp.mow-dev")) {
+            LOGGER.info(format("Tested environmet is GOV Dev at '%s'. So we are using CCM2 connection to the CDP Control Plane!", defaultServer));
+            return Tunnel.CCMV2_JUMPGATE;
+        } else {
+            return Tunnel.CLUSTER_PROXY;
+        }
+    }
+
+    protected void initUsers(TestContext testContext) {
+        checkNonEmpty("integrationtest.cloudbreak.server", defaultServer);
+        if (StringUtils.containsIgnoreCase(defaultServer, "usg-1.cdp.mow-dev")) {
+            LOGGER.info(format("Tested environmet is GOV Dev at '%s'. So we are initializing GOV Dev UMS users!", defaultServer));
+            useRealUmsUser(testContext, GovUserKeys.USER_ACCOUNT_ADMIN);
+            useRealUmsUser(testContext, GovUserKeys.ENV_CREATOR_A);
+        } else {
+            createDefaultUser(testContext);
+        }
+    }
+
+    private void checkNonEmpty(String name, String value) {
+        if (StringUtils.isEmpty(value)) {
+            throw new NullPointerException(format("Following variable must be set whether as environment variables or (test) application.yaml: %s",
+                    name.replaceAll("\\.", "_").toUpperCase()));
+        }
+    }
+
+    protected AttachedFreeIpaRequest attachedFreeIpaHARequestForTest() {
+        AttachedFreeIpaRequest attachedFreeIpaRequest = new AttachedFreeIpaRequest();
+        AwsFreeIpaParameters awsFreeIpaParameters = new AwsFreeIpaParameters();
+        AwsFreeIpaSpotParameters awsFreeIpaSpotParameters = new AwsFreeIpaSpotParameters();
+
+        // It won't use Spot instances for FreeIpa.
+        awsFreeIpaSpotParameters.setPercentage(0);
+        awsFreeIpaParameters.setSpot(awsFreeIpaSpotParameters);
+
+        attachedFreeIpaRequest.setCreate(Boolean.TRUE);
+        // FreeIpa HA with 2 instances is defined.
+        attachedFreeIpaRequest.setInstanceCountByGroup(2);
+        attachedFreeIpaRequest.setAws(awsFreeIpaParameters);
+        return attachedFreeIpaRequest;
+    }
+
 }

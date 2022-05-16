@@ -2,10 +2,6 @@ package com.sequenceiq.it.cloudbreak.testcase.e2e.gov;
 
 import org.testng.annotations.Test;
 
-import com.sequenceiq.common.api.type.Tunnel;
-import com.sequenceiq.environment.api.v1.environment.model.request.AttachedFreeIpaRequest;
-import com.sequenceiq.environment.api.v1.environment.model.request.aws.AwsFreeIpaParameters;
-import com.sequenceiq.environment.api.v1.environment.model.request.aws.AwsFreeIpaSpotParameters;
 import com.sequenceiq.environment.api.v1.environment.model.response.EnvironmentStatus;
 import com.sequenceiq.freeipa.api.v1.freeipa.stack.model.common.Status;
 import com.sequenceiq.freeipa.api.v1.operation.model.OperationState;
@@ -34,7 +30,7 @@ public class BasicFreeIpaTests extends PreconditionGovTest {
                 .given(EnvironmentTestDto.class)
                     .withNetwork()
                     .withTelemetry("telemetry")
-                    .withTunnel(Tunnel.CCMV2_JUMPGATE)
+                    .withTunnel(getTunnel())
                     .withFreeIpa(attachedFreeIpaHARequestForTest())
                 .when(getEnvironmentTestClient().create())
                 .await(EnvironmentStatus.AVAILABLE)
@@ -49,19 +45,5 @@ public class BasicFreeIpaTests extends PreconditionGovTest {
                 .when(getFreeIpaTestClient().syncAll())
                 .await(OperationState.COMPLETED)
                 .validate();
-    }
-
-    private AttachedFreeIpaRequest attachedFreeIpaHARequestForTest() {
-        AttachedFreeIpaRequest attachedFreeIpaRequest = new AttachedFreeIpaRequest();
-        AwsFreeIpaParameters awsFreeIpaParameters = new AwsFreeIpaParameters();
-        AwsFreeIpaSpotParameters awsFreeIpaSpotParameters = new AwsFreeIpaSpotParameters();
-
-        awsFreeIpaSpotParameters.setPercentage(0);
-        awsFreeIpaParameters.setSpot(awsFreeIpaSpotParameters);
-
-        attachedFreeIpaRequest.setCreate(Boolean.TRUE);
-        attachedFreeIpaRequest.setInstanceCountByGroup(2);
-        attachedFreeIpaRequest.setAws(awsFreeIpaParameters);
-        return attachedFreeIpaRequest;
     }
 }
