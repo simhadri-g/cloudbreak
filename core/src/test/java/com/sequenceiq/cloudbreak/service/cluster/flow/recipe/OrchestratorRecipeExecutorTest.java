@@ -88,7 +88,7 @@ public class OrchestratorRecipeExecutorTest {
         Set<Node> nodes = Set.of(node);
         when(stackUtil.collectReachableNodes(any())).thenReturn(nodes);
 
-        underTest.preClusterManagerStartRecipes(stack);
+        underTest.preClusterManagerStartRecipes(stack, null);
 
         verify(gatewayConfigService).getPrimaryGatewayConfig(stack);
         verify(stackUtil).collectReachableNodes(stack);
@@ -106,7 +106,7 @@ public class OrchestratorRecipeExecutorTest {
         Set<Node> nodes = Set.of(this.node);
         when(stackUtil.collectReachableNodes(any())).thenReturn(nodes);
 
-        underTest.postClusterManagerStartRecipes(stack);
+        underTest.postClusterManagerStartRecipes(stack, null);
 
         verify(gatewayConfigService).getPrimaryGatewayConfig(stack);
         verify(stackUtil).collectReachableNodes(stack);
@@ -124,7 +124,7 @@ public class OrchestratorRecipeExecutorTest {
         Set<Node> nodes = Set.of(this.node);
         when(stackUtil.collectReachableNodes(any())).thenReturn(nodes);
 
-        underTest.postClusterInstall(stack);
+        underTest.postClusterInstall(stack, null);
 
         verify(gatewayConfigService).getPrimaryGatewayConfig(stack);
         verify(stackUtil).collectReachableNodes(stack);

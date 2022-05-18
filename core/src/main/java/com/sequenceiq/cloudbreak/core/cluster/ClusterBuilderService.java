@@ -181,7 +181,7 @@ public class ClusterBuilderService {
         recipeEngine.executePostAmbariStartRecipes(
                 stackService.getByIdWithListsInTransaction(stackId),
                 hostGroupService.getByClusterWithRecipes(
-                        stackService.getByIdWithListsInTransaction(stackId).getCluster().getId()));
+                        stackService.getByIdWithListsInTransaction(stackId).getCluster().getId()), null);
     }
 
     public void prepareExtendedTemplate(Long stackId) {
@@ -228,7 +228,7 @@ public class ClusterBuilderService {
         StackView stackView = stackService.getViewByIdWithoutAuth(stackId);
         if (stackView.getClusterView() != null) {
             recipeEngine.executePostInstallRecipes(
-                    stackService.getByIdWithListsInTransaction(stackId), hostGroupService.getByClusterWithRecipes(stackView.getClusterView().getId()));
+                    stackService.getByIdWithListsInTransaction(stackId), hostGroupService.getByClusterWithRecipes(stackView.getClusterView().getId()), null);
         }
     }
 

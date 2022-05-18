@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import org.apache.commons.collections4.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -76,10 +77,13 @@ class OrchestratorRecipeExecutor {
         }
     }
 
-    public void preClusterManagerStartRecipes(Stack stack) throws CloudbreakException {
+    public void preClusterManagerStartRecipes(Stack stack, Map<String, String> candidateAddresses) throws CloudbreakException {
         GatewayConfig gatewayConfig = gatewayConfigService.getPrimaryGatewayConfig(stack);
         try {
-            hostOrchestrator.preClusterManagerStartRecipes(gatewayConfig, stackUtil.collectReachableNodes(stack),
+            Set<Node> targetNodes = MapUtils.isEmpty(candidateAddresses)
+                    ? stackUtil.collectReachableNodes(stack)
+                    : stackUtil.collectReachableAndUnreachableCandidateNodes(stack, candidateAddresses.keySet()).getReachableNodes();
+            hostOrchestrator.preClusterManagerStartRecipes(gatewayConfig, targetNodes,
                     clusterDeletionBasedModel(stack.getId(), stack.getCluster().getId()));
         } catch (CloudbreakOrchestratorTimeoutException timeoutException) {
             String preClusterManagerStartException = "Pre cluster manager start" + getRecipeTimeoutErrorMessage(timeoutException);
@@ -92,10 +96,13 @@ class OrchestratorRecipeExecutor {
         }
     }
 
-    public void postClusterManagerStartRecipes(Stack stack) throws CloudbreakException {
+    public void postClusterManagerStartRecipes(Stack stack, Map<String, String> candidateAddresses) throws CloudbreakException {
         GatewayConfig gatewayConfig = gatewayConfigService.getPrimaryGatewayConfig(stack);
         try {
-            hostOrchestrator.postClusterManagerStartRecipes(gatewayConfig, stackUtil.collectReachableNodes(stack),
+            Set<Node> targetNodes = MapUtils.isEmpty(candidateAddresses)
+                    ? stackUtil.collectReachableNodes(stack)
+                    : stackUtil.collectReachableAndUnreachableCandidateNodes(stack, candidateAddresses.keySet()).getReachableNodes();
+            hostOrchestrator.postClusterManagerStartRecipes(gatewayConfig, targetNodes,
                     clusterDeletionBasedModel(stack.getId(), stack.getCluster().getId()));
         } catch (CloudbreakOrchestratorTimeoutException timeoutException) {
             String postClusterManagerStartException = "Post cluster manager start" + getRecipeTimeoutErrorMessage(timeoutException);
@@ -108,10 +115,13 @@ class OrchestratorRecipeExecutor {
         }
     }
 
-    public void postClusterInstall(Stack stack) throws CloudbreakException {
+    public void postClusterInstall(Stack stack, Map<String, String> candidateAddresses) throws CloudbreakException {
         GatewayConfig gatewayConfig = gatewayConfigService.getPrimaryGatewayConfig(stack);
         try {
-            hostOrchestrator.postInstallRecipes(gatewayConfig, stackUtil.collectReachableNodes(stack),
+            Set<Node> targetNodes = MapUtils.isEmpty(candidateAddresses)
+                    ? stackUtil.collectReachableNodes(stack)
+                    : stackUtil.collectReachableAndUnreachableCandidateNodes(stack, candidateAddresses.keySet()).getReachableNodes();
+            hostOrchestrator.postInstallRecipes(gatewayConfig, targetNodes,
                     clusterDeletionBasedModel(stack.getId(), stack.getCluster().getId()));
         } catch (CloudbreakOrchestratorTimeoutException timeoutException) {
             String postInstallException = getRecipeTimeoutErrorMessage(timeoutException);

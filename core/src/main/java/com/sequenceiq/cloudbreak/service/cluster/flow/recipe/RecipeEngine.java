@@ -70,30 +70,30 @@ public class RecipeEngine {
         LOGGER.info("Upload recipes finished successfully for stack with name {}", stack.getName());
     }
 
-    public void executePreClusterManagerRecipes(Stack stack, Set<HostGroup> hostGroups) throws CloudbreakException {
+    public void executePreClusterManagerRecipes(Stack stack, Map<String, String> candidateAddresses, Set<HostGroup> hostGroups) throws CloudbreakException {
         Collection<Recipe> recipes = hostGroupService.getRecipesByHostGroups(hostGroups);
         if (shouldExecuteRecipeOnStack(recipes, PRE_CLOUDERA_MANAGER_START)) {
             uploadRecipesIfNeeded(stack, hostGroups);
-            orchestratorRecipeExecutor.preClusterManagerStartRecipes(stack);
+            orchestratorRecipeExecutor.preClusterManagerStartRecipes(stack, candidateAddresses);
         }
     }
 
     // note: executed when LDAP config is present, because later the LDAP sync is hooked for this salt state in the top.sls.
-    public void executePostAmbariStartRecipes(Stack stack, Set<HostGroup> hostGroups) throws CloudbreakException {
+    public void executePostAmbariStartRecipes(Stack stack, Set<HostGroup> hostGroups, Map<String, String> candidateAddresses) throws CloudbreakException {
         Collection<Recipe> recipes = hostGroupService.getRecipesByHostGroups(hostGroups);
         if ((stack.getCluster() != null && ldapConfigService.isLdapConfigExistsForEnvironment(stack.getEnvironmentCrn(), stack.getName()))
                 || recipesFound(recipes, POST_CLOUDERA_MANAGER_START)) {
             uploadRecipesIfNeeded(stack, hostGroups);
-            orchestratorRecipeExecutor.postClusterManagerStartRecipes(stack);
+            orchestratorRecipeExecutor.postClusterManagerStartRecipes(stack, candidateAddresses);
         }
     }
 
-    public void executePostInstallRecipes(Stack stack, Set<HostGroup> hostGroups) throws CloudbreakException {
+    public void executePostInstallRecipes(Stack stack, Set<HostGroup> hostGroups, Map<String, String> candidateAddresses) throws CloudbreakException {
         Collection<Recipe> recipes = hostGroupService.getRecipesByHostGroups(hostGroups);
         if (shouldExecuteRecipeOnStack(recipes, POST_CLUSTER_INSTALL)) {
             uploadRecipesIfNeeded(stack, hostGroups);
+            orchestratorRecipeExecutor.postClusterInstall(stack, candidateAddresses);
         }
-        orchestratorRecipeExecutor.postClusterInstall(stack);
     }
 
     public void executePreTerminationRecipes(Stack stack, Set<HostGroup> hostGroups, boolean forced) throws CloudbreakException {

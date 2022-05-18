@@ -108,7 +108,7 @@ public class RecipeEngineTest {
         given(hostGroupService.getRecipesByHostGroups(anySet())).willReturn(Set.of(recipe));
         given(recipeTemplateService.isGeneratedRecipesInDbStale(anySet(), anyMap())).willReturn(false);
         // WHEN
-        recipeEngine.executePostInstallRecipes(stack(), hostGroups());
+        recipeEngine.executePostInstallRecipes(stack(), hostGroups(), null);
         // THEN
         verify(recipeTemplateService, times(1)).updateAllGeneratedRecipes(anySet(), anyMap());
     }
