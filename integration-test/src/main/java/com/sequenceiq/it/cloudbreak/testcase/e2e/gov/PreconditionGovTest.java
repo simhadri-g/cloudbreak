@@ -18,8 +18,11 @@ import com.sequenceiq.it.cloudbreak.client.FreeIpaTestClient;
 import com.sequenceiq.it.cloudbreak.client.SdxTestClient;
 import com.sequenceiq.it.cloudbreak.context.TestContext;
 import com.sequenceiq.it.cloudbreak.dto.environment.EnvironmentTestDto;
+import com.sequenceiq.it.cloudbreak.dto.sdx.SdxInternalTestDto;
 import com.sequenceiq.it.cloudbreak.dto.telemetry.TelemetryTestDto;
 import com.sequenceiq.it.cloudbreak.testcase.e2e.AbstractE2ETest;
+import com.sequenceiq.sdx.api.model.SdxDatabaseAvailabilityType;
+import com.sequenceiq.sdx.api.model.SdxDatabaseRequest;
 
 public class PreconditionGovTest extends AbstractE2ETest {
 
@@ -88,6 +91,26 @@ public class PreconditionGovTest extends AbstractE2ETest {
         waitForEnvironmentCreation(testContext);
         waitForUserSync(testContext);
         waitForDatalakeCreation(testContext);
+    }
+
+    // This is needed until CB-16092 Support DB SSL in AWS GovCloud for DL and DH clusters using RDS
+    // is going to be implemented
+    // OR
+    // /mock-thunderhead/src/main/resources/application.yml
+    //    database.wire.encryption.enable: true
+    // is going to be set to 'false'
+    @Override
+    protected void initiateDatalakeCreation(TestContext testContext) {
+        SdxDatabaseRequest database = new SdxDatabaseRequest();
+        database.setAvailabilityType(SdxDatabaseAvailabilityType.NONE);
+        database.setCreate(false);
+
+        testContext
+                .given(SdxInternalTestDto.class)
+                    .withDatabase(database)
+                    .withCloudStorage(getCloudStorageRequest(testContext))
+                .when(sdxTestClient.createInternal())
+                .validate();
     }
 
     protected Tunnel getTunnel() {

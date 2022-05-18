@@ -27,6 +27,7 @@ public class BasicSdxTests extends PreconditionGovTest {
     public void testCreateSdx(TestContext testContext) {
         SdxDatabaseRequest sdxDatabaseRequest = new SdxDatabaseRequest();
         sdxDatabaseRequest.setAvailabilityType(SdxDatabaseAvailabilityType.NONE);
+        sdxDatabaseRequest.setCreate(false);
 
         testContext
                 .given(SdxTestDto.class)

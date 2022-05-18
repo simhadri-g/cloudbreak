@@ -43,6 +43,7 @@ import com.sequenceiq.it.cloudbreak.dto.telemetry.TelemetryTestDto;
 import com.sequenceiq.it.cloudbreak.mock.ImageCatalogMockServerSetup;
 import com.sequenceiq.sdx.api.model.SdxCloudStorageRequest;
 import com.sequenceiq.sdx.api.model.SdxClusterStatusResponse;
+import com.sequenceiq.sdx.api.model.SdxDatabaseAvailabilityType;
 import com.sequenceiq.sdx.api.model.SdxDatabaseRequest;
 
 public abstract class AbstractIntegrationTest extends AbstractMinimalTest {
@@ -162,6 +163,7 @@ public abstract class AbstractIntegrationTest extends AbstractMinimalTest {
 
     protected void createDatalakeWithoutDatabase(TestContext testContext) {
         SdxDatabaseRequest database = new SdxDatabaseRequest();
+        database.setAvailabilityType(SdxDatabaseAvailabilityType.NONE);
         database.setCreate(false);
 
         testContext
