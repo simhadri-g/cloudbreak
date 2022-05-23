@@ -1,6 +1,7 @@
 package com.sequenceiq.freeipa.api.v1.freeipa.stack.model.describe;
 
 import java.util.List;
+import java.util.Set;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -66,6 +67,9 @@ public class DescribeFreeIpaResponse {
     @NotNull
     @ApiModelProperty(value = FreeIpaModelDescriptions.FREEIPA_SERVER_SETTINGS, required = true)
     private FreeIpaServerResponse freeIpa;
+
+    @Valid
+    private Set<String> recipes;
 
     private AvailabilityStatus availabilityStatus;
 
@@ -253,6 +257,14 @@ public class DescribeFreeIpaResponse {
         this.variant = variant;
     }
 
+    public Set<String> getRecipes() {
+        return recipes;
+    }
+
+    public void setRecipes(Set<String> recipes) {
+        this.recipes = recipes;
+    }
+
     @Override
     public String toString() {
         return "DescribeFreeIpaResponse{" +
@@ -275,6 +287,7 @@ public class DescribeFreeIpaResponse {
                 ", telemetry=" + telemetry +
                 ", cloudStorage=" + cloudStorage +
                 ", userSyncStatus=" + userSyncStatus +
+                ", recipes=" + recipes +
                 '}';
     }
 }

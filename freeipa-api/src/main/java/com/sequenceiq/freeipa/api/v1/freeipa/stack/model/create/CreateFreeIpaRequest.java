@@ -3,6 +3,7 @@ package com.sequenceiq.freeipa.api.v1.freeipa.stack.model.create;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
@@ -62,6 +63,10 @@ public class CreateFreeIpaRequest implements TaggableRequest {
     @Valid
     @ApiModelProperty(FreeIpaModelDescriptions.IMAGE_SETTINGS)
     private ImageSettingsRequest image;
+
+    @Valid
+    @ApiModelProperty(FreeIpaModelDescriptions.RECIPES)
+    private Set<String> recipes;
 
     @NotNull
     @Valid
@@ -216,6 +221,14 @@ public class CreateFreeIpaRequest implements TaggableRequest {
         this.tags = tags;
     }
 
+    public Set<String> getRecipes() {
+        return recipes;
+    }
+
+    public void setRecipes(Set<String> recipes) {
+        this.recipes = recipes;
+    }
+
     @Override
     public void addTag(String key, String value) {
         tags.put(key, value);
@@ -223,20 +236,24 @@ public class CreateFreeIpaRequest implements TaggableRequest {
 
     @Override
     public String toString() {
-        return "CreateFreeIpaRequest{"
-                + "environmentCrn='" + environmentCrn + '\''
-                + ", name='" + name + '\''
-                + ", placement=" + placement
-                + ", instanceGroups=" + instanceGroups
-                + ", authentication=" + authentication
-                + ", network=" + network
-                + ", image=" + image
-                + ", freeIpa=" + freeIpa
-                + ", gatewayPort=" + gatewayPort
-                + ", telemetry=" + telemetry
-                + ", variant=" + variant
-                + ", tags=" + tags
-                + ", tunnel=" + tunnel
-                + '}';
+        return "CreateFreeIpaRequest{" +
+                "environmentCrn='" + environmentCrn + '\'' +
+                ", name='" + name + '\'' +
+                ", placement=" + placement +
+                ", instanceGroups=" + instanceGroups +
+                ", authentication=" + authentication +
+                ", network=" + network +
+                ", image=" + image +
+                ", recipes=" + recipes +
+                ", freeIpa=" + freeIpa +
+                ", gatewayPort=" + gatewayPort +
+                ", telemetry=" + telemetry +
+                ", backup=" + backup +
+                ", tags=" + tags +
+                ", useCcm=" + useCcm +
+                ", tunnel=" + tunnel +
+                ", variant='" + variant + '\'' +
+                '}';
     }
+
 }

@@ -2,6 +2,7 @@ package com.sequenceiq.freeipa.converter.stack;
 
 import static com.sequenceiq.freeipa.util.CloudArgsForIgConverter.DISK_ENCRYPTION_SET_ID;
 import static com.sequenceiq.freeipa.util.CloudArgsForIgConverter.GCP_KMS_ENCRYPTION_KEY;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.any;
@@ -136,6 +137,33 @@ public class CreateFreeIpaRequestToStackConverterTest {
 
         underTest.convert(source, environmentResponse, ACCOUNT_ID, owner, "crn1", CloudPlatform.AZURE.name());
         assertEquals(mapCaptorForEncryption.getValue().get(DISK_ENCRYPTION_SET_ID), "dummyDiskEncryptionSetId");
+    }
+
+    @Test
+    void testConvertForRecipes() {
+        CreateFreeIpaRequest source = createCreateFreeIpaRequest();
+        source.setRecipes(Set.of("recipe1", "recipe2"));
+
+        DetailedEnvironmentResponse environmentResponse = new DetailedEnvironmentResponse();
+
+        when(crnService.createCrn(ACCOUNT_ID, CrnResourceDescriptor.FREEIPA)).thenReturn("resourceCrn");
+        when(stackAuthenticationConverter.convert(source.getAuthentication())).thenReturn(new StackAuthentication());
+
+        when(instanceGroupConverter.convert(any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any())).thenReturn(new InstanceGroup());
+        when(telemetryConverter.convert(source.getTelemetry())).thenReturn(new Telemetry());
+        when(backupConverter.convert(source.getTelemetry())).thenReturn(new Backup());
+        when(entitlementService.internalTenant(ACCOUNT_ID)).thenReturn(Boolean.FALSE);
+        when(costTagging.prepareDefaultTags(any())).thenReturn(new HashMap<>());
+        Future<String> owner = CompletableFuture.completedFuture("dummyUser");
+
+        Stack stack = underTest.convert(source, environmentResponse, ACCOUNT_ID, owner, "crn1", CloudPlatform.AZURE.name());
+        assertThat(stack.getRecipes()).containsExactlyInAnyOrder("recipe1", "recipe2");
     }
 
     @Test

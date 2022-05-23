@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -146,6 +147,10 @@ public class Stack implements AccountAwareResource, OrchestratorAware {
     @Convert(converter = SecretToString.class)
     @SecretValue
     private Secret ccmParameters = Secret.EMPTY;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Column(name = "recipe")
+    private Set<String> recipes;
 
     public Long getId() {
         return id;
@@ -472,6 +477,14 @@ public class Stack implements AccountAwareResource, OrchestratorAware {
         this.ccmV2AgentCrn = ccmV2AgentCrn;
     }
 
+    public Set<String> getRecipes() {
+        return recipes;
+    }
+
+    public void setRecipes(Set<String> recipes) {
+        this.recipes = recipes;
+    }
+
     public CcmConnectivityParameters getCcmParameters() {
         if (ccmParameters != null && ccmParameters.getRaw() != null) {
             return JsonUtil.readValueOpt(ccmParameters.getRaw(), CcmConnectivityParameters.class).orElse(null);
@@ -511,6 +524,7 @@ public class Stack implements AccountAwareResource, OrchestratorAware {
                 ", appVersion='" + appVersion + '\'' +
                 ", minaSshdServiceId='" + minaSshdServiceId + '\'' +
                 ", ccmV2AgentCrn='" + ccmV2AgentCrn + '\'' +
+                ", recipes='" + recipes + '\'' +
                 '}';
     }
 

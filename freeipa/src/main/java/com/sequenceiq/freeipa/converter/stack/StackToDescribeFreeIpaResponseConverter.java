@@ -86,6 +86,7 @@ public class StackToDescribeFreeIpaResponseConverter {
         decorateFreeIpaServerResponseWithIps(describeFreeIpaResponse.getFreeIpa(), describeFreeIpaResponse.getInstanceGroups());
         decorateFreeIpaServerResponseWithLoadBalancedHost(stack, describeFreeIpaResponse.getFreeIpa(), freeIpa);
         describeFreeIpaResponse.setAppVersion(stack.getAppVersion());
+        describeFreeIpaResponse.setRecipes(stack.getRecipes());
         decorateWithCloudStorageAndTelemetry(stack, describeFreeIpaResponse);
         userSyncStatus.ifPresent(u -> describeFreeIpaResponse.setUserSyncStatus(userSyncStatusConverter.convert(u)));
         return describeFreeIpaResponse;

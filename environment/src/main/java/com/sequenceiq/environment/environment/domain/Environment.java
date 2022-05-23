@@ -8,7 +8,9 @@ import java.util.stream.Collectors;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -84,6 +86,10 @@ public class Environment implements AuthResource, AccountAwareResource {
     private String freeIpaImageCatalog;
 
     private String freeIpaImageId;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Column(name = "recipe")
+    private Set<String> freeipaRecipes;
 
     @Column(nullable = false)
     private boolean freeIpaEnableMultiAz;
@@ -404,6 +410,14 @@ public class Environment implements AuthResource, AccountAwareResource {
         this.freeIpaImageId = freeIpaImageId;
     }
 
+    public Set<String> getFreeipaRecipes() {
+        return freeipaRecipes;
+    }
+
+    public void setFreeipaRecipes(Set<String> freeipaRecipes) {
+        this.freeipaRecipes = freeipaRecipes;
+    }
+
     public EnvironmentAuthentication getAuthentication() {
         return authentication;
     }
@@ -563,6 +577,7 @@ public class Environment implements AuthResource, AccountAwareResource {
                 ", status=" + status +
                 ", statusReason='" + statusReason + '\'' +
                 ", freeIpaEnableMultiAz='" + freeIpaEnableMultiAz + '\'' +
+                ", freeipaRecipes='" + freeipaRecipes + '\'' +
                 ", deletionType='" + deletionType + '\'' +
                 ", domain='" + domain + '\'' +
                 '}';
