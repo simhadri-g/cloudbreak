@@ -537,7 +537,6 @@ public class SaltOrchestrator implements HostOrchestrator {
                 .collect(Collectors.toCollection(HashSet::new));
 
         try (SaltConnector sc = saltService.createSaltConnector(primaryGateway)) {
-
             installFreeIpaUpdateExistingReplicas(sc, existingFreeIpaReplicaHostnames, allNodes, exitCriteriaModel);
 
             unassignedHostnames.removeAll(installFreeIpaPrimary(sc, primaryGateway, freeIpaMasterHostname, unassignedHostnames, existingFreeIpaReplicaHostnames,

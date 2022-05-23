@@ -141,6 +141,9 @@ public class CreateFreeIpaRequestToStackConverter {
         } else {
             stack.setBackup(backupConverter.convert(source.getTelemetry()));
         }
+        if (source.getRecipes() != null) {
+            stack.setRecipes(source.getRecipes());
+        }
         stack.setCdpNodeStatusMonitorUser(UUID.randomUUID().toString());
         stack.setCdpNodeStatusMonitorPassword(PasswordUtil.generatePassword());
         decorateStackWithTunnelAndCcm(stack, source);

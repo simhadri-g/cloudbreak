@@ -193,6 +193,7 @@ public class EnvironmentDtoConverter {
         environment.setFreeIpaInstanceType(creationDto.getFreeIpaCreation().getInstanceType());
         environment.setFreeIpaImageCatalog(creationDto.getFreeIpaCreation().getImageCatalog());
         environment.setFreeIpaEnableMultiAz(creationDto.getFreeIpaCreation().isEnableMultiAz());
+        environment.setFreeipaRecipes(creationDto.getFreeIpaCreation().getRecipes());
         environment.setDeletionType(NONE);
         environment.setFreeIpaImageId(creationDto.getFreeIpaCreation().getImageId());
         environment.setAdminGroupName(creationDto.getAdminGroupName());
@@ -282,7 +283,7 @@ public class EnvironmentDtoConverter {
     private FreeIpaCreationDto environmentToFreeIpaCreationDto(Environment environment) {
         FreeIpaCreationDto freeIpaCreationDto = getFreeIpaCreationDto(environment.isCreateFreeIpa(), environment.getFreeIpaInstanceCountByGroup(),
                 environment.getFreeIpaInstanceType(), environment.getFreeIpaImageCatalog(), environment.getFreeIpaImageId(),
-                environment.isFreeIpaEnableMultiAz());
+                environment.isFreeIpaEnableMultiAz(), environment.getFreeipaRecipes());
         freeIpaCreationDto.setAws(getFreeIpaAwsParameters(environment.getCloudPlatform(), environment.getParameters()));
         return freeIpaCreationDto;
     }
@@ -290,7 +291,7 @@ public class EnvironmentDtoConverter {
     private FreeIpaCreationDto environmentToFreeIpaCreationDto(EnvironmentView environment) {
         FreeIpaCreationDto freeIpaCreationDto = getFreeIpaCreationDto(environment.isCreateFreeIpa(), environment.getFreeIpaInstanceCountByGroup(),
                 environment.getFreeIpaInstanceType(), environment.getFreeIpaImageCatalog(), environment.getFreeIpaImageId(),
-                environment.isFreeIpaEnableMultiAz());
+                environment.isFreeIpaEnableMultiAz(), environment.getFreeipaRecipes());
         freeIpaCreationDto.setAws(getFreeIpaAwsParameters(environment.getCloudPlatform(), environment.getParameters()));
         return freeIpaCreationDto;
     }
@@ -310,7 +311,7 @@ public class EnvironmentDtoConverter {
     }
 
     private FreeIpaCreationDto getFreeIpaCreationDto(boolean createFreeIpa, Integer freeIpaInstanceCountByGroup, String freeIpaInstanceType,
-            String freeIpaImageCatalog, String freeIpaImageId, boolean freeIpaEnableMultiAz) {
+            String freeIpaImageCatalog, String freeIpaImageId, boolean freeIpaEnableMultiAz, Set<String> freeipaRecipes) {
         FreeIpaCreationDto.Builder builder = FreeIpaCreationDto.builder()
                 .withCreate(createFreeIpa);
         Optional.ofNullable(freeIpaInstanceCountByGroup).ifPresent(builder::withInstanceCountByGroup);
@@ -318,6 +319,7 @@ public class EnvironmentDtoConverter {
         builder.withImageCatalog(freeIpaImageCatalog);
         builder.withImageId(freeIpaImageId);
         builder.withEnableMultiAz(freeIpaEnableMultiAz);
+        builder.withRecipes(freeipaRecipes);
         return builder.build();
     }
 }

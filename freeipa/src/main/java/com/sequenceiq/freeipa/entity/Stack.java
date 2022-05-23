@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -146,6 +147,10 @@ public class Stack implements AccountAwareResource, OrchestratorAware {
     @Convert(converter = SecretToString.class)
     @SecretValue
     private Secret ccmParameters = Secret.EMPTY;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Column(name = "recipe")
+    private Set<String> recipes;
 
     public Long getId() {
         return id;
@@ -470,6 +475,14 @@ public class Stack implements AccountAwareResource, OrchestratorAware {
 
     public void setCcmV2AgentCrn(String ccmV2AgentCrn) {
         this.ccmV2AgentCrn = ccmV2AgentCrn;
+    }
+
+    public Set<String> getRecipes() {
+        return recipes;
+    }
+
+    public void setRecipes(Set<String> recipes) {
+        this.recipes = recipes;
     }
 
     public CcmConnectivityParameters getCcmParameters() {
