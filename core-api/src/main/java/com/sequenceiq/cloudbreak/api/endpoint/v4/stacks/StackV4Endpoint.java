@@ -415,6 +415,14 @@ public interface StackV4Endpoint {
             @NotEmpty @ValidCrn(resource = CrnResourceDescriptor.USER) @QueryParam("initiatorUserCrn") String initiatorUserCrn);
 
     @PUT
+    @Path("internal/crn/{crn}/upgrade_ccm")
+    @Produces(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Initiates the CCM tunnel type upgrade to the latest available version", nickname = "upgradeCcmByCrnInternal")
+    StackCcmUpgradeV4Response upgradeCcmByCrnInternal(@PathParam("workspaceId") Long workspaceId,
+            @NotEmpty @ValidCrn(resource = { CrnResourceDescriptor.DATAHUB, CrnResourceDescriptor.DATALAKE }) @PathParam("crn") String crn,
+            @NotEmpty @ValidCrn(resource = CrnResourceDescriptor.USER) @QueryParam("initiatorUserCrn") String initiatorUserCrn);
+
+    @PUT
     @Path("{name}/salt_update")
     @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = UPDATE_SALT, nickname = "updateSaltByName")
