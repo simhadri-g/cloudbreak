@@ -128,7 +128,7 @@ public class EnvironmentView extends CompactView implements AuthResource {
     private String freeIpaImageId;
 
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name="environment_freeiparecipes", joinColumns=@JoinColumn(name = "environment_id", referencedColumnName = "id"))
+    @CollectionTable(name = "environment_freeiparecipes", joinColumns = @JoinColumn(name = "environment_id", referencedColumnName = "id"))
     @Column(name = "recipe")
     private Set<String> freeipaRecipes;
 
