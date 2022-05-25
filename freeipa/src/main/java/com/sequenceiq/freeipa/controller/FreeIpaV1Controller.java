@@ -67,6 +67,7 @@ import com.sequenceiq.freeipa.client.FreeIpaClientExceptionWrapper;
 import com.sequenceiq.freeipa.controller.validation.AttachChildEnvironmentRequestValidator;
 import com.sequenceiq.freeipa.controller.validation.CreateFreeIpaRequestValidator;
 import com.sequenceiq.freeipa.entity.Stack;
+import com.sequenceiq.freeipa.orchestrator.RotateSaltPasswordService;
 import com.sequenceiq.freeipa.orchestrator.SaltUpdateService;
 import com.sequenceiq.freeipa.service.binduser.BindUserCreateService;
 import com.sequenceiq.freeipa.service.freeipa.cert.root.FreeIpaRootCertificateService;
@@ -155,6 +156,9 @@ public class FreeIpaV1Controller implements FreeIpaV1Endpoint {
 
     @Inject
     private SaltUpdateService saltUpdateService;
+
+    @Inject
+    private RotateSaltPasswordService rotateSaltPasswordService;
 
     @Inject
     private FreeIpaRetryService retryService;
@@ -330,6 +334,13 @@ public class FreeIpaV1Controller implements FreeIpaV1Endpoint {
     public void stop(@ResourceCrn @NotEmpty String environmentCrn) {
         String accountId = crnService.getCurrentAccountId();
         freeIpaStopService.stop(environmentCrn, accountId);
+    }
+
+    @Override
+    @CheckPermissionByResourceCrn(action = AuthorizationResourceAction.ROTATE_SALTUSER_PASSWORD_ENVIRONMENT)
+    public void rotateSaltPassword(@ResourceCrn @NotEmpty String environmentCrn) {
+        String accountId = crnService.getCurrentAccountId();
+        rotateSaltPasswordService.rotateSaltPassword(environmentCrn, accountId);
     }
 
     @Override

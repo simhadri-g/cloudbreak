@@ -34,7 +34,6 @@ import com.sequenceiq.authorization.annotation.ResourceName;
 import com.sequenceiq.authorization.annotation.ResourceNameList;
 import com.sequenceiq.authorization.resource.AuthorizationResourceAction;
 import com.sequenceiq.cloudbreak.auth.ThreadBasedUserCrnProvider;
-import com.sequenceiq.cloudbreak.auth.altus.EntitlementService;
 import com.sequenceiq.cloudbreak.auth.crn.CrnResourceDescriptor;
 import com.sequenceiq.cloudbreak.auth.security.internal.AccountId;
 import com.sequenceiq.cloudbreak.auth.security.internal.TenantAwareParam;
@@ -79,6 +78,7 @@ import com.sequenceiq.environment.environment.service.EnvironmentStartService;
 import com.sequenceiq.environment.environment.service.EnvironmentStopService;
 import com.sequenceiq.environment.environment.service.EnvironmentUpgradeCcmService;
 import com.sequenceiq.environment.environment.service.cloudstorage.CloudStorageValidator;
+import com.sequenceiq.environment.environment.service.freeipa.FreeIpaService;
 import com.sequenceiq.environment.environment.v1.converter.EnvironmentApiConverter;
 import com.sequenceiq.environment.environment.v1.converter.EnvironmentResponseConverter;
 import com.sequenceiq.flow.api.model.FlowIdentifier;
@@ -107,13 +107,13 @@ public class EnvironmentController implements EnvironmentEndpoint {
 
     private final EnvironmentStopService environmentStopService;
 
+    private final FreeIpaService freeIpaService;
+
     private final CredentialService credentialService;
 
     private final CredentialToCredentialV1ResponseConverter credentialConverter;
 
     private final EnvironmentStackConfigUpdateService stackConfigUpdateService;
-
-    private final EntitlementService entitlementService;
 
     private final EnvironmentLoadBalancerService environmentLoadBalancerService;
 
@@ -135,10 +135,10 @@ public class EnvironmentController implements EnvironmentEndpoint {
             EnvironmentModificationService environmentModificationService,
             EnvironmentStartService environmentStartService,
             EnvironmentStopService environmentStopService,
+            FreeIpaService freeIpaService,
             CredentialService credentialService,
             CredentialToCredentialV1ResponseConverter credentialConverter,
             EnvironmentStackConfigUpdateService stackConfigUpdateService,
-            EntitlementService entitlementService,
             EnvironmentLoadBalancerService environmentLoadBalancerService,
             EnvironmentFiltering environmentFiltering,
             CloudStorageValidator cloudStorageValidator,
@@ -152,10 +152,10 @@ public class EnvironmentController implements EnvironmentEndpoint {
         this.environmentModificationService = environmentModificationService;
         this.environmentStartService = environmentStartService;
         this.environmentStopService = environmentStopService;
+        this.freeIpaService = freeIpaService;
         this.credentialService = credentialService;
         this.credentialConverter = credentialConverter;
         this.stackConfigUpdateService = stackConfigUpdateService;
-        this.entitlementService = entitlementService;
         this.environmentLoadBalancerService = environmentLoadBalancerService;
         this.environmentFiltering = environmentFiltering;
         this.cloudStorageValidator = cloudStorageValidator;
@@ -367,6 +367,14 @@ public class EnvironmentController implements EnvironmentEndpoint {
     @CheckPermissionByResourceCrn(action = AuthorizationResourceAction.STOP_ENVIRONMENT)
     public FlowIdentifier postStopByCrn(@ValidCrn(resource = CrnResourceDescriptor.ENVIRONMENT) @ResourceCrn @TenantAwareParam String crn) {
         return environmentStopService.stopByCrn(crn);
+    }
+
+    @Override
+    @CheckPermissionByResourceName(action = AuthorizationResourceAction.ROTATE_SALTUSER_PASSWORD_ENVIRONMENT)
+    public void rotateSaltPasswordByName(@ResourceName String name) {
+        String accountId = ThreadBasedUserCrnProvider.getAccountId();
+        EnvironmentDto environmentDto = environmentService.getByNameAndAccountId(name, accountId);
+        freeIpaService.rotateSaltPassword(environmentDto);
     }
 
     @Override

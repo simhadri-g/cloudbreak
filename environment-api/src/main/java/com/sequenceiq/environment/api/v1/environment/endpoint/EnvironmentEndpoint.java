@@ -224,6 +224,13 @@ public interface EnvironmentEndpoint {
             nickname = "stopEnvironmentByCrnV1")
     FlowIdentifier postStopByCrn(@ValidCrn(resource = CrnResourceDescriptor.ENVIRONMENT) @PathParam("crn") String crn);
 
+    @POST
+    @Path("/name/{name}/rotate_salt_password")
+    @Produces(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = EnvironmentOpDescription.ROTATE_SALT_PASSWORD_BY_NAME, produces = MediaType.APPLICATION_JSON, notes = ENVIRONMENT_NOTES,
+            nickname = "rotateSaltPasswordEnvironmentByNameV1")
+    void rotateSaltPasswordByName(@PathParam("name") String name);
+
     @GET
     @Path("/crn/{crn}/verify_credential")
     @Produces(MediaType.APPLICATION_JSON)
