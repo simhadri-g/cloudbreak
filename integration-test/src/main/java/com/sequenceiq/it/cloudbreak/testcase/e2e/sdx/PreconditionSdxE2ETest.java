@@ -1,18 +1,12 @@
 package com.sequenceiq.it.cloudbreak.testcase.e2e.sdx;
 
-import java.util.Collections;
-import java.util.List;
-
 import javax.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.response.instancegroup.InstanceGroupV4Response;
-import com.sequenceiq.it.cloudbreak.SdxClient;
 import com.sequenceiq.it.cloudbreak.client.SdxTestClient;
 import com.sequenceiq.it.cloudbreak.context.TestContext;
-import com.sequenceiq.it.cloudbreak.dto.CloudbreakTestDto;
 import com.sequenceiq.it.cloudbreak.dto.sdx.SdxTestDto;
 import com.sequenceiq.it.cloudbreak.testcase.e2e.AbstractE2ETest;
 import com.sequenceiq.it.cloudbreak.util.CloudFunctionality;
@@ -53,12 +47,5 @@ public class PreconditionSdxE2ETest extends AbstractE2ETest {
 
     protected CloudFunctionality getCloudFunctionality(TestContext testContext) {
         return testContext.getCloudProvider().getCloudFunctionality();
-    }
-
-    protected <T extends CloudbreakTestDto> List<InstanceGroupV4Response> getInstanceGroups(T testDto, SdxClient client) {
-        return client.getDefaultClient()
-                .sdxEndpoint()
-                .getDetailByCrn(testDto.getCrn(), Collections.emptySet())
-                .getStackV4Response().getInstanceGroups();
     }
 }

@@ -2,13 +2,11 @@ package com.sequenceiq.it.cloudbreak.testcase.e2e.environment;
 
 import static com.sequenceiq.cloudbreak.api.endpoint.v4.recipes.requests.RecipeV4Type.PRE_CLOUDERA_MANAGER_START;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
 
-import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
@@ -18,6 +16,7 @@ import com.sequenceiq.distrox.api.v1.distrox.model.database.DistroXDatabaseAvail
 import com.sequenceiq.distrox.api.v1.distrox.model.database.DistroXDatabaseRequest;
 import com.sequenceiq.environment.api.v1.environment.model.response.EnvironmentStatus;
 import com.sequenceiq.it.cloudbreak.CloudbreakClient;
+import com.sequenceiq.it.cloudbreak.assertion.freeipa.RecipeTestAssertion;
 import com.sequenceiq.it.cloudbreak.assertion.util.CloudProviderSideTagAssertion;
 import com.sequenceiq.it.cloudbreak.client.CredentialTestClient;
 import com.sequenceiq.it.cloudbreak.client.DistroXTestClient;
@@ -37,7 +36,6 @@ import com.sequenceiq.it.cloudbreak.dto.telemetry.TelemetryTestDto;
 import com.sequenceiq.it.cloudbreak.testcase.e2e.AbstractE2ETest;
 import com.sequenceiq.it.cloudbreak.util.clouderamanager.ClouderaManagerUtil;
 import com.sequenceiq.it.cloudbreak.util.ssh.SshJUtil;
-import com.sequenceiq.it.util.ResourceUtil;
 import com.sequenceiq.sdx.api.model.SdxClusterStatusResponse;
 
 public class EnvironmentStopStartTests extends AbstractE2ETest {
@@ -89,7 +87,7 @@ public class EnvironmentStopStartTests extends AbstractE2ETest {
             given = "there is a running cloudbreak",
             when = "create an attached SDX and Datahubs (in case of AWS, create one of the Datahub with external database)",
             then = "should be stopped first and started after it, and required services should be in running state in CM")
-    public void testCreateStopStartEnvironment(TestContext testContext) throws IOException {
+    public void testCreateStopStartEnvironment(TestContext testContext) {
         LOGGER.info("Environment stop-start test execution has been started....");
         DistroXDatabaseRequest distroXDatabaseRequest = new DistroXDatabaseRequest();
         distroXDatabaseRequest.setAvailabilityType(DistroXDatabaseAvailabilityType.NON_HA);
@@ -100,7 +98,7 @@ public class EnvironmentStopStartTests extends AbstractE2ETest {
         testContext
                 .given(RecipeTestDto.class)
                     .withName(recipeName)
-                    .withContent(generateRecipeContent())
+                    .withContent(generateRecipeContent(CREATE_FILE_RECIPE))
                     .withRecipeType(PRE_CLOUDERA_MANAGER_START)
                 .when(recipeTestClient.createV4())
                 .given(CredentialTestDto.class)
@@ -118,8 +116,7 @@ public class EnvironmentStopStartTests extends AbstractE2ETest {
                 .given(FreeIpaTestDto.class)
                     .withEnvironment()
                     .withTelemetry("telemetry")
-                .then((tc, testDto, client) -> sshJUtil.checkFilesOnFreeIpaByNameAndPath(testDto, testDto.getCrn(), client,
-                        filePath, fileName, 1, null, null))
+                .then(RecipeTestAssertion.validateFilesOnFreeIpa(filePath, fileName, 1, sshJUtil))
                 .given(SdxInternalTestDto.class)
                     .addTags(SDX_TAGS)
                     .withCloudStorage(getCloudStorageRequest(testContext))
@@ -161,10 +158,5 @@ public class EnvironmentStopStartTests extends AbstractE2ETest {
         String sanitizedUserName = SanitizerUtil.sanitizeWorkloadUsername(username);
         clouderaManagerUtil.checkCmServicesStartedSuccessfully(testDto, sanitizedUserName, MOCK_UMS_PASSWORD);
         return testDto;
-    }
-
-    private String generateRecipeContent() throws IOException {
-        String recipeContentFromFile = ResourceUtil.readResourceAsString(applicationContext, CREATE_FILE_RECIPE);
-        return Base64.encodeBase64String(recipeContentFromFile.getBytes());
     }
 }

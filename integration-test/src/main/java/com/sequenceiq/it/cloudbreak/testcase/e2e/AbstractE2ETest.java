@@ -1,12 +1,16 @@
 package com.sequenceiq.it.cloudbreak.testcase.e2e;
 
+import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.not;
 
+import java.io.IOException;
+
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.collections4.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,10 +20,12 @@ import org.testng.annotations.Listeners;
 
 import com.sequenceiq.cloudbreak.common.mappable.CloudPlatform;
 import com.sequenceiq.it.cloudbreak.context.TestContext;
+import com.sequenceiq.it.cloudbreak.exception.TestFailException;
 import com.sequenceiq.it.cloudbreak.testcase.AbstractIntegrationTest;
 import com.sequenceiq.it.cloudbreak.util.spot.SpotRetryOnceTestListener;
 import com.sequenceiq.it.cloudbreak.util.spot.SpotRetryUtil;
 import com.sequenceiq.it.cloudbreak.util.spot.SpotUtil;
+import com.sequenceiq.it.util.ResourceUtil;
 import com.sequenceiq.it.util.TagsUtil;
 
 @Listeners(SpotRetryOnceTestListener.class)
@@ -89,5 +95,15 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                 String.format("The [%s] cloud provider is NOT supported for this test!", cloudProvider),
                 cloudProvider,
                 not(equalToIgnoringCase(cloudPlatform.name())));
+    }
+
+    protected String generateRecipeContent(String recipeLocation) {
+        try {
+            String recipeContentFromFile = ResourceUtil.readResourceAsString(applicationContext, recipeLocation);
+            return Base64.encodeBase64String(recipeContentFromFile.getBytes());
+        } catch (IOException e) {
+            LOGGER.error("Cannot generate recipe content! Cannot find recipe file at path: {} throws: {}!", recipeLocation, e.getMessage(), e);
+            throw new TestFailException(format(" Cannot generate recipe content! Cannot find recipe file at path: %s", recipeLocation), e);
+        }
     }
 }
