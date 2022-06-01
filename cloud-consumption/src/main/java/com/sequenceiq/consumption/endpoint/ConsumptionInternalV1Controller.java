@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 
 import com.sequenceiq.authorization.annotation.InternalOnly;
+import com.sequenceiq.cloudbreak.auth.ThreadBasedUserCrnProvider;
 import com.sequenceiq.cloudbreak.auth.crn.CrnResourceDescriptor;
 import com.sequenceiq.cloudbreak.auth.security.internal.AccountId;
 import com.sequenceiq.cloudbreak.structuredevent.rest.annotation.AccountEntityType;
@@ -19,6 +20,7 @@ import com.sequenceiq.consumption.api.v1.consumption.model.request.StorageConsum
 import com.sequenceiq.consumption.domain.Consumption;
 import com.sequenceiq.consumption.dto.ConsumptionCreationDto;
 import com.sequenceiq.consumption.endpoint.converter.ConsumptionApiConverter;
+import com.sequenceiq.consumption.flow.ConsumptionReactorFlowManager;
 import com.sequenceiq.consumption.service.ConsumptionService;
 
 @Controller
@@ -30,10 +32,13 @@ public class ConsumptionInternalV1Controller implements ConsumptionInternalEndpo
 
     private final ConsumptionService consumptionService;
 
+    private final ConsumptionReactorFlowManager reactor;
+
     private final ConsumptionApiConverter consumptionApiConverter;
 
-    public ConsumptionInternalV1Controller(ConsumptionService consumptionService, ConsumptionApiConverter consumptionApiConverter) {
+    public ConsumptionInternalV1Controller(ConsumptionService consumptionService, ConsumptionReactorFlowManager reactor, ConsumptionApiConverter consumptionApiConverter) {
         this.consumptionService = consumptionService;
+        this.reactor = reactor;
         this.consumptionApiConverter = consumptionApiConverter;
     }
 
@@ -41,7 +46,8 @@ public class ConsumptionInternalV1Controller implements ConsumptionInternalEndpo
     @InternalOnly
     public void scheduleStorageConsumptionCollection(@AccountId String accountId, @Valid @NotNull StorageConsumptionRequest request) {
         ConsumptionCreationDto consumptionCreationDto = consumptionApiConverter.initCreationDtoForStorage(request);
-        consumptionService.create(consumptionCreationDto);
+       Consumption a= consumptionService.create(consumptionCreationDto);
+       reactor.triggerStorageConsumptionCollectionFlow(a, ThreadBasedUserCrnProvider.getUserCrn());
     }
 
     @Override
